@@ -216,8 +216,8 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
             mDateTextPaint = new Paint();
             mDateTextPaint.setColor(mWatchMainColor);
             mDateTextPaint.setAntiAlias(true);
-            mDateTextPaint.setTextSize(20);
-            mDateTextPaint.setTextAlign(Paint.Align.LEFT);
+            mDateTextPaint.setTextSize(getResources().getDimensionPixelSize(R.dimen.fontsize));
+            mDateTextPaint.setTextAlign(Paint.Align.CENTER);
 
             mDateBoxPaint = new Paint();
             mDateBoxPaint.setColor(mWatchSecondaryColor);
@@ -410,40 +410,39 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
 
             if (!mAmbient) {
                 float width = mLargeTickWidth * 5 / 3f;
-                RectF rect = new RectF(mCenterX - (width / 2f),
+                canvas.drawRect(mCenterX - (width / 2f),
                         mCenterY - mOuterTickRadius,
                         mCenterX + (width / 2f),
-                        mCenterY - mInnerLargeTickRadius);
-                canvas.drawRect(
-                        rect, mMainPaint);
+                        mCenterY - mInnerLargeTickRadius,
+                        mMainPaint);
 
-                rect = new RectF(mCenterX - (width * 3 / 5f) / 2f,
+                canvas.drawRect(
+                        mCenterX - (width * 3 / 5f) / 2f,
                         mCenterY - mOuterTickRadius,
                         mCenterX - (width * 1 / 5f) / 2f,
-                        mCenterY - mInnerLargeTickRadius);
-                canvas.drawRect(
-                        rect, mSecondaryPaint);
+                        mCenterY - mInnerLargeTickRadius,
+                        mSecondaryPaint);
 
-                rect = new RectF(mCenterX + (width * 1 / 5f) / 2f,
+                canvas.drawRect(
+                        mCenterX + (width * 1 / 5f) / 2f,
                         mCenterY - mOuterTickRadius,
                         mCenterX + (width * 3 / 5f) / 2f,
-                        mCenterY - mInnerLargeTickRadius);
-                canvas.drawRect(
-                        rect, mSecondaryPaint);
+                        mCenterY - mInnerLargeTickRadius,
+                        mSecondaryPaint);
             } else {
                 float width = mLargeTickWidth * 5 / 3f;
-                RectF rect = new RectF(mCenterX - (width / 2f),
+                canvas.drawRect(
+                        mCenterX - (width / 2f),
                         mCenterY - mOuterTickRadius,
                         mCenterX + (width / 2f),
-                        mCenterY - mInnerLargeTickRadius);
+                        mCenterY - mInnerLargeTickRadius,
+                        mMainPaint);
                 canvas.drawRect(
-                        rect, mMainPaint);
-                rect = new RectF(mCenterX - (width / 6f),
+                        mCenterX - (width / 6f),
                         mCenterY - mOuterTickRadius,
                         mCenterX + (width / 6f),
-                        mCenterY - mInnerLargeTickRadius);
-                canvas.drawRect(
-                        rect, mMainPaint);
+                        mCenterY - mInnerLargeTickRadius,
+                        mMainPaint);
 
             }
 
@@ -454,19 +453,19 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
                     continue;
                 canvas.save();
                 canvas.rotate(tickIndex * (360f / ticks), mCenterX, mCenterY);
-                RectF rect = new RectF(mCenterX - (mLargeTickWidth / 2f),
+                canvas.drawRect(
+                        mCenterX - (mLargeTickWidth / 2f),
                         mCenterY - mOuterTickRadius,
                         mCenterX + (mLargeTickWidth / 2f),
-                        mCenterY - mInnerLargeTickRadius);
-                canvas.drawRect(
-                        rect, mMainPaint);
+                        mCenterY - mInnerLargeTickRadius,
+                        mMainPaint);
                 if (!mAmbient) {
-                    rect = new RectF(mCenterX - (mLargeTickWidth / 6f),
+                    canvas.drawRect(
+                            mCenterX - (mLargeTickWidth / 6f),
                             mCenterY - mOuterTickRadius,
                             mCenterX + (mLargeTickWidth / 6f),
-                            mCenterY - mInnerLargeTickRadius);
-                    canvas.drawRect(
-                            rect, mSecondaryPaint);
+                            mCenterY - mInnerLargeTickRadius,
+                            mSecondaryPaint);
                 }
                 canvas.restore();
             }
@@ -478,9 +477,10 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
             final int date = mCalendar.get(Calendar.DAY_OF_MONTH);
             final String dateStr = String.format(Locale.getDefault(), "%d", date);
             final Rect textBound = new Rect();
-            mMainPaint.getTextBounds(dateStr, 0, dateStr.length(), textBound);
+            mDateTextPaint.getTextBounds(dateStr, 0, dateStr.length(), textBound);
+
             canvas.drawText(dateStr,
-                    mCenterX + mInnerLargeTickRadius,
+                    mDateTextRect.left + mDateTextRect.width() / 2f,
                     mCenterY + textBound.height() / 2f,
                     mDateTextPaint);
             if (!mAmbient) {
@@ -513,39 +513,35 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
             }
 
             canvas.rotate(hoursRotation, mCenterX, mCenterY);
-            RectF rect = new RectF(
-                    mCenterX - (mHourHandWidth / 2f),
+            canvas.drawRect(mCenterX - (mHourHandWidth / 2f),
                     mCenterY + mHourHandBackLength,
                     mCenterX + (mHourHandWidth / 2f),
-                    mCenterY - mHourHandFrontLength);
-            canvas.drawRect(rect, mMainPaint);
+                    mCenterY - mHourHandFrontLength,
+                    mMainPaint);
 
             if (!mAmbient) {
-                rect = new RectF(
-                        mCenterX - (mHourHandWidth / 6f),
+                canvas.drawRect(mCenterX - (mHourHandWidth / 6f),
                         mCenterY + mHourHandBackLength,
                         mCenterX + (mHourHandWidth / 6f),
-                        mCenterY - mHourHandHighlightLength);
-                canvas.drawRect(rect, mSecondaryPaint);
+                        mCenterY - mHourHandHighlightLength,
+                        mSecondaryPaint);
 
             }
 
             canvas.rotate(minutesRotation - hoursRotation, mCenterX, mCenterY);
 
-            rect = new RectF(
-                    mCenterX - (mMinuteHandWidth / 2f),
+            canvas.drawRect(mCenterX - (mMinuteHandWidth / 2f),
                     mCenterY + mMinuteHandBackLength,
                     mCenterX + (mMinuteHandWidth / 2f),
-                    mCenterY - mMinuteHandFrontLength);
-            canvas.drawRect(rect, mMainPaint);
+                    mCenterY - mMinuteHandFrontLength,
+                    mMainPaint);
 
             if (!mAmbient) {
-                rect = new RectF(
-                        mCenterX - (mMinuteHandWidth / 6f),
+                canvas.drawRect(mCenterX - (mMinuteHandWidth / 6f),
                         mCenterY + mMinuteHandBackLength,
                         mCenterX + (mMinuteHandWidth / 6f),
-                        mCenterY - mMinuteHandHighlightLength);
-                canvas.drawRect(rect, mSecondaryPaint);
+                        mCenterY - mMinuteHandHighlightLength,
+                        mSecondaryPaint);
             }
 
 

@@ -21,7 +21,7 @@
             android:value="true" />
 
         <service
-            android:name="com.cybermats.cleaner.SimpletonWatchFace"
+            android:name=".SimpletonWatchFace"
             android:label="@string/my_analog_name"
             android:permission="android.permission.BIND_WALLPAPER">
             <meta-data
