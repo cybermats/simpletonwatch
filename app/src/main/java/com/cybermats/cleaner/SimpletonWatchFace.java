@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -25,6 +26,7 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't
@@ -115,8 +117,22 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
                 invalidate();
             }
         };
-        private boolean mRegisteredTimeZoneReceiver = false;
+        private final BroadcastReceiver mBatteryLevelReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                if (scale != 0) {
+                    mBatteryPercent = level / (float)scale;
+                } else {
+                    mBatteryPercent = 0;
+                }
+                invalidate();
+            }
+        };
+        private boolean mRegisteredReceiver = false;
         private boolean mMuteMode;
+        private float mBatteryPercent;
         private float mCenterX;
         private float mCenterY;
 
@@ -147,6 +163,9 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
         private int mWatchSecondaryColor;
         private int mWatchHandShadowColor;
         private int mWatchSecondColor;
+        private int mWatchDateTextColor;
+        private int mWatchDateBoxColor;
+        private int mWatchBatteryColor;
 
         private Paint mMainPaint;
         private Paint mSecondaryPaint;
@@ -155,6 +174,7 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
         private Paint mSmallTickPaint;
         private Paint mDateTextPaint;
         private Paint mDateBoxPaint;
+        private Paint mBatteryPaint;
         private boolean mAmbient;
 
         @Override
@@ -186,14 +206,15 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
             mWatchMainColor = Color.WHITE;
             mWatchSecondaryColor = Color.DKGRAY;
             mWatchSecondColor = Color.RED;
+            mWatchDateTextColor = Color.WHITE;
+            mWatchDateBoxColor = Color.LTGRAY;
+            mWatchBatteryColor = Color.WHITE;
 
             mMainPaint = new Paint();
             mMainPaint.setColor(mWatchMainColor);
             mMainPaint.setAntiAlias(true);
             mMainPaint.setStrokeCap(Paint.Cap.BUTT);
             mMainPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
-            mMainPaint.setTextSize(20);
-            mMainPaint.setTextAlign(Paint.Align.LEFT);
 
             mSecondaryPaint = new Paint();
             mSecondaryPaint.setColor(mWatchSecondaryColor);
@@ -214,16 +235,21 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
             mSmallTickPaint.setAntiAlias(true);
 
             mDateTextPaint = new Paint();
-            mDateTextPaint.setColor(mWatchMainColor);
+            mDateTextPaint.setColor(mWatchDateTextColor);
             mDateTextPaint.setAntiAlias(true);
             mDateTextPaint.setTextSize(getResources().getDimensionPixelSize(R.dimen.fontsize));
             mDateTextPaint.setTextAlign(Paint.Align.CENTER);
 
             mDateBoxPaint = new Paint();
-            mDateBoxPaint.setColor(mWatchSecondaryColor);
+            mDateBoxPaint.setColor(mWatchDateBoxColor);
             mDateBoxPaint.setAntiAlias(true);
             mDateBoxPaint.setStrokeWidth(0);
             mDateBoxPaint.setStyle(Paint.Style.STROKE);
+
+            mBatteryPaint = new Paint();
+            mBatteryPaint.setColor(mWatchBatteryColor);
+            mBatteryPaint.setAntiAlias(true);
+            mBatteryPaint.setStrokeCap(Paint.Cap.BUTT);
 
         }
 
@@ -262,12 +288,14 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
                 mSecondPaint.setColor(Color.WHITE);
                 mSmallTickPaint.setColor(Color.WHITE);
                 mDateTextPaint.setColor(Color.WHITE);
+                mBatteryPaint.setColor(Color.WHITE);
 
                 mMainPaint.setAntiAlias(false);
                 mSecondaryPaint.setAntiAlias(false);
                 mSecondPaint.setAntiAlias(false);
                 mSmallTickPaint.setAntiAlias(false);
                 mDateTextPaint.setAntiAlias(false);
+                mBatteryPaint.setAntiAlias(false);
 
                 mMainPaint.setStyle(Paint.Style.STROKE);
                 mSecondaryPaint.setStyle(Paint.Style.STROKE);
@@ -280,12 +308,14 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
                 mSecondPaint.setColor(mWatchSecondColor);
                 mSmallTickPaint.setColor(mWatchTickColor);
                 mDateTextPaint.setColor(mWatchMainColor);
+                mBatteryPaint.setColor(mWatchBatteryColor);
 
                 mMainPaint.setAntiAlias(true);
                 mSecondaryPaint.setAntiAlias(true);
                 mSecondPaint.setAntiAlias(true);
                 mSmallTickPaint.setAntiAlias(true);
                 mDateTextPaint.setAntiAlias(true);
+                mBatteryPaint.setAntiAlias(true);
 
                 mMainPaint.setStyle(Paint.Style.FILL_AND_STROKE);
                 mSecondaryPaint.setStyle(Paint.Style.FILL_AND_STROKE);
@@ -419,16 +449,10 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(
                         mCenterX - (width * 3 / 5f) / 2f,
                         mCenterY - mOuterTickRadius,
-                        mCenterX - (width * 1 / 5f) / 2f,
-                        mCenterY - mInnerLargeTickRadius,
-                        mSecondaryPaint);
-
-                canvas.drawRect(
-                        mCenterX + (width * 1 / 5f) / 2f,
-                        mCenterY - mOuterTickRadius,
                         mCenterX + (width * 3 / 5f) / 2f,
                         mCenterY - mInnerLargeTickRadius,
                         mSecondaryPaint);
+
             } else {
                 float width = mLargeTickWidth * 5 / 3f;
                 canvas.drawRect(
@@ -474,6 +498,22 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
 
         private void drawWatchFace(Canvas canvas) {
 
+            /**
+             * Draw the battery level
+             */
+            float diff = (1 - mBatteryPercent) * (mOuterTickRadius - mInnerLargeTickRadius);
+
+            canvas.drawRect(mCenterX - (mLargeTickWidth / 6f),
+                    mCenterY - mOuterTickRadius + diff,
+                    mCenterX + (mLargeTickWidth / 6f),
+                    mCenterY - mInnerLargeTickRadius,
+                    mBatteryPaint);
+
+
+
+            /**
+             * Draw the Date and Date Box
+             */
             final int date = mCalendar.get(Calendar.DAY_OF_MONTH);
             final String dateStr = String.format(Locale.getDefault(), "%d", date);
             final Rect textBound = new Rect();
@@ -580,20 +620,23 @@ public class SimpletonWatchFace extends CanvasWatchFaceService {
         }
 
         private void registerReceiver() {
-            if (mRegisteredTimeZoneReceiver) {
+            if (mRegisteredReceiver) {
                 return;
             }
-            mRegisteredTimeZoneReceiver = true;
+            mRegisteredReceiver = true;
             IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
             SimpletonWatchFace.this.registerReceiver(mTimeZoneReceiver, filter);
+            IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            SimpletonWatchFace.this.registerReceiver(mBatteryLevelReceiver, ifilter);
         }
 
         private void unregisterReceiver() {
-            if (!mRegisteredTimeZoneReceiver) {
+            if (!mRegisteredReceiver) {
                 return;
             }
-            mRegisteredTimeZoneReceiver = false;
+            mRegisteredReceiver = false;
             SimpletonWatchFace.this.unregisterReceiver(mTimeZoneReceiver);
+            SimpletonWatchFace.this.unregisterReceiver(mBatteryLevelReceiver);
         }
 
         /**

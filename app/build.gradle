@@ -20,7 +20,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "com.android.support:support-v4:27.1.1"
     implementation "com.android.support:support-v13:27.1.1"
     implementation 'com.google.android.support:wearable:2.3.0'
     implementation 'com.google.android.gms:play-services-wearable:15.0.1'
